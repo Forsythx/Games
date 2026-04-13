@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="grid"></div>
+<div class="wrapper">
+<h1 class="title">🐍 Змейка</h1>
+<canvas id="c" width="400" height="400"></canvas><br>
+<a href="index.html" class="btn">← Меню</a>
+</div>
+
+<script>
+let c=document.getElementById('c'),ctx=c.getContext('2d');
+let s=20,x=200,y=200,dx=20,dy=0,foodX=100,foodY=100;
+
+document.onkeydown=e=>{
+ if(e.key=="ArrowUp"){dx=0;dy=-s}
+ if(e.key=="ArrowDown"){dx=0;dy=s}
+ if(e.key=="ArrowLeft"){dx=-s;dy=0}
+ if(e.key=="ArrowRight"){dx=s;dy=0}
+}
+
+function draw(){
+ ctx.fillRect(0,0,400,400)
+ ctx.fillStyle="lime"
+ ctx.fillRect(x,y,s,s)
+ ctx.fillStyle="red"
+ ctx.fillRect(foodX,foodY,s,s)
+
+ x+=dx;y+=dy
+
+ if(x==foodX&&y==foodY){
+   foodX=Math.random()*20*s
+   foodY=Math.random()*20*s
+ }
+
+ requestAnimationFrame(draw)
+}
+draw()
+</script>
+</body>
+</html>

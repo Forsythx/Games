@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Угадай Пару — NEXUS GAMES</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --neon-cyan: #00f5ff;
+  --neon-purple: #b44fff;
+  --neon-pink: #ff2d78;
+  --neon-green: #39ff6a;
+  --dark-bg: #050811;
+  --card-face: rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.1);
+}
+
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--dark-bg);
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Ambient BG */
+.bg {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse at 15% 40%, rgba(0,245,255,0.04) 0%, transparent 55%),
+    radial-gradient(ellipse at 85% 70%, rgba(180,79,255,0.05) 0%, transparent 50%);
+}
+.grid-lines {
+  position: fixed; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,245,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,245,255,0.025) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+.scanlines {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  background: repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.04) 2px,rgba(0,0,0,0.04) 4px);
+}
+
+/* Layout */
+.wrapper {
+  position: relative; z-index: 10;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 20px 60px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: 'Orbitron', monospace;
+  font-size: 11px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  text-decoration: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s;
+}
+.back-btn:hover { color: var(--neon-cyan); border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0,245,255,0.2); }
+.game-title-bar {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(18px, 4vw, 28px);
+  font-weight: 900;
+  background: linear-gradient(135deg, #fff 0%, var(--neon-cyan) 60%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+/* Stats row */
+.stats-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.stat-box {
+  flex: 1;
+  min-width: 90px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+.stat-label {
+  font-size: 10px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.35);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.stat-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 22px; font-weight: 700;
+  color: var(--neon-cyan);
+  transition: color 0.3s;
+}
+.stat-val.danger { color: var(--neon-pink); }
+
+/* Peek timer bar */
+.peek-bar-wrap {
+  margin-bottom: 20px;
+}
+.peek-label {
+  font-size: 11px; letter-spacing: 2px; color: rgba(255,255,255,0.35);
+  text-transform: uppercase; margin-bottom: 6px;
+  display: flex; justify-content: space-between;
+}
+.peek-bar-outer {
+  height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden;
+}
+.peek-bar-inner {
+  height: 100%; background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple));
+  border-radius: 2px;
+  transition: width 0.1s linear;
+  box-shadow: 0 0 10px rgba(0,245,255,0.5);
+}
+
+/* Message area */
+.message {
+  text-align: center;
+  font-family: 'Orbitron', monospace;
+  font-size: 14px; letter-spacing: 2px;
+  min-height: 30px;
+  margin-bottom: 16px;
+  color: var(--neon-cyan);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.message.show { opacity: 1; }
+.message.error { color: var(--neon-pink); }
+.message.success { color: var(--neon-green); }
+
+/* Card grid */
+.card-grid {
+  display: grid;
+  gap: 10px;
+  justify-content: center;
+  flex: 1;
+}
+
+/* Flip card */
+.flip-card {
+  perspective: 800px;
+}
+.flip-card-inner {
+  position: relative;
+  width: 100%; height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4,0,0.2,1);
+  cursor: pointer;
+}
+.flip-card.flipped .flip-card-inner,
+.flip-card.matched .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.card-face, .card-back {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Back = hidden side */
+.card-back {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.card-back::after {
+  content: '?';
+  font-family: 'Orbitron', monospace;
+  font-size: 1.6em;
+  color: rgba(255,255,255,0.15);
+}
+.flip-card:not(.flipped):not(.matched):hover .card-back {
+  border-color: rgba(0,245,255,0.4);
+  box-shadow: 0 0 20px rgba(0,245,255,0.15);
+}
+
+/* Front = revealed side */
+.card-face {
+  transform: rotateY(180deg);
+  background: rgba(0,245,255,0.05);
+  border: 1px solid rgba(0,245,255,0.3);
+  font-size: 2em;
+  box-shadow: 0 0 20px rgba(0,245,255,0.1);
+}
+.flip-card.matched .card-face {
+  background: rgba(57,255,106,0.08);
+  border-color: rgba(57,255,106,0.5);
+  box-shadow: 0 0 25px rgba(57,255,106,0.25);
+  animation: matched-pulse 0.5s ease;
+}
+.flip-card.wrong .card-face {
+  background: rgba(255,45,120,0.08);
+  border-color: rgba(255,45,120,0.4);
+  animation: wrong-shake 0.4s ease;
+}
+@keyframes matched-pulse {
+  0%   { transform: rotateY(180deg) scale(1); }
+  40%  { transform: rotateY(180deg) scale(1.1); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
+@keyframes wrong-shake {
+  0%,100% { transform: rotateY(180deg) translateX(0); }
+  20%  { transform: rotateY(180deg) translateX(-5px); }
+  60%  { transform: rotateY(180deg) translateX(5px); }
+}
+
+/* Peeking = during preview phase */
+.flip-card.peeking .flip-card-inner { transform: rotateY(180deg); }
+.flip-card.peeking .card-face {
+  background: rgba(180,79,255,0.1);
+  border-color: rgba(180,79,255,0.5);
+  box-shadow: 0 0 20px rgba(180,79,255,0.2);
+}
+
+/* Level overlay */
+.overlay {
+  position: fixed; inset: 0; z-index: 100;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(5,8,17,0.92);
+  backdrop-filter: blur(12px);
+  flex-direction: column;
+  gap: 24px;
+  transition: opacity 0.4s;
+}
+.overlay.hidden { opacity: 0; pointer-events: none; }
+.overlay-badge {
+  font-family: 'Orbitron', monospace;
+  font-size: 11px; letter-spacing: 5px;
+  color: var(--neon-cyan);
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.overlay-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(36px, 8vw, 70px);
+  font-weight: 900;
+  background: linear-gradient(135deg, #fff, var(--neon-cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  text-align: center;
+  line-height: 1.1;
+}
+.overlay-sub {
+  font-size: 16px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.45);
+  text-align: center;
+}
+.overlay-info {
+  display: flex; gap: 40px;
+}
+.info-item { text-align: center; }
+.info-val {
+  font-family: 'Orbitron', monospace;
+  font-size: 28px; font-weight: 700;
+  color: var(--neon-cyan);
+  display: block;
+}
+.info-lbl {
+  font-size: 11px; letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+}
+.btn-start {
+  font-family: 'Orbitron', monospace;
+  font-size: 13px; letter-spacing: 3px;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1px solid var(--neon-cyan);
+  color: var(--neon-cyan);
+  padding: 14px 40px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative; overflow: hidden;
+}
+.btn-start::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--neon-cyan);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.btn-start:hover { box-shadow: 0 0 30px rgba(0,245,255,0.4); }
+.btn-start:hover::before { opacity: 0.1; }
+
+/* Win overlay specifics */
+.overlay.win .overlay-title {
+  background: linear-gradient(135deg, var(--neon-green), var(--neon-cyan));
+  -webkit-background-clip: text; background-clip: text;
+}
+.overlay.gameover .overlay-title {
+  background: linear-gradient(135deg, var(--neon-pink), #ff8c00);
+  -webkit-background-clip: text; background-clip: text;
+}
+
+/* Confetti dots */
+.confetti-dot {
+  position: fixed;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 101;
+  animation: confetti-fall linear forwards;
+}
+@keyframes confetti-fall {
+  0%   { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="grid-lines"></div>
+<div class="scanlines"></div>
+
+<!-- Level start / win / gameover overlay -->
+<div class="overlay" id="overlay">
+  <div class="overlay-badge" id="ovBadge">// УРОВЕНЬ</div>
+  <div class="overlay-title" id="ovTitle">УРОВЕНЬ 1</div>
+  <div class="overlay-sub" id="ovSub">Запомни карточки и найди пары</div>
+  <div class="overlay-info">
+    <div class="info-item"><span class="info-val" id="ovGrid">4×4</span><span class="info-lbl">Сетка</span></div>
+    <div class="info-item"><span class="info-val" id="ovPeek">5с</span><span class="info-lbl">Запоминание</span></div>
+    <div class="info-item"><span class="info-val" id="ovPairs">8</span><span class="info-lbl">Пар</span></div>
+  </div>
+  <button class="btn-start" id="btnStart">Начать →</button>
+</div>
+
+<div class="wrapper">
+  <div class="topbar">
+    <a href="index.html" class="back-btn">← Меню</a>
+    <div class="game-title-bar">🃏 УГАДАЙ ПАРУ</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-box">
+      <div class="stat-label">Уровень</div>
+      <div class="stat-val" id="statLevel">1</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Пары</div>
+      <div class="stat-val" id="statPairs">0 / 8</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Ошибки</div>
+      <div class="stat-val" id="statErrors">0</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-label">Счёт</div>
+      <div class="stat-val" id="statScore">0</div>
+    </div>
+  </div>
+
+  <div class="peek-bar-wrap" id="peekBarWrap" style="display:none">
+    <div class="peek-label">
+      <span>Запоминай!</span>
+      <span id="peekCount">5</span>
+    </div>
+    <div class="peek-bar-outer">
+      <div class="peek-bar-inner" id="peekBar" style="width:100%"></div>
+    </div>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <div class="card-grid" id="cardGrid"></div>
+</div>
+
+<script>
+// ==================== LEVEL CONFIG ====================
+const LEVELS = [
+  { cols: 4, rows: 4, peekTime: 5000 },   // L1: 4×4 = 8 pairs
+  { cols: 4, rows: 5, peekTime: 4500 },   // L2: 4×5 = 10 pairs (even cells)
+  { cols: 6, rows: 4, peekTime: 4000 },   // L3: 6×4 = 12 pairs
+  { cols: 6, rows: 5, peekTime: 3500 },   // L4: 6×5 = 15 pairs → 14 pairs
+  { cols: 6, rows: 6, peekTime: 3000 },   // L5: 6×6 = 18 pairs
+  { cols: 6, rows: 7, peekTime: 2500 },   // L6: 6×7 = 21 pairs
+  { cols: 8, rows: 6, peekTime: 2000 },   // L7: 8×6 = 24 pairs
+  { cols: 8, rows: 7, peekTime: 1500 },   // L8: 8×7 = 28 pairs
+  { cols: 8, rows: 8, peekTime: 1200 },   // L9: 8×8 = 32 pairs
+  { cols: 10, rows: 8, peekTime: 1000 },  // L10: 10×8 = 40 pairs
+];
+
+const EMOJIS = [
+  '🔥','⚡','🌊','🌪','🎯','💎','🧬','🚀','🌙','⭐',
+  '🦄','🐉','🔮','🎮','🕹','🎲','🃏','🎭','🧩','🏆',
+  '💡','🔑','🗝','⚔','🛡','🪄','🌈','🦋','🐬','🦊',
+  '🌺','🍄','🍀','⚗','🧪','🔭','🎸','🎹','🎺','🥁',
+  '🚂','✈','🛸','⛵','🏔','🌋','🏝','🌌','🌠','💫',
+];
+
+// ==================== STATE ====================
+let level = 0;
+let score = 0;
+let errors = 0;
+let cards = [];
+let flipped = [];
+let matched = 0;
+let totalPairs = 0;
+let canFlip = false;
+let peekInterval = null;
+let peekStart = 0;
+let peekDuration = 0;
+
+// ==================== DOM ====================
+const overlay    = document.getElementById('overlay');
+const ovBadge    = document.getElementById('ovBadge');
+const ovTitle    = document.getElementById('ovTitle');
+const ovSub      = document.getElementById('ovSub');
+const ovGrid     = document.getElementById('ovGrid');
+const ovPeek     = document.getElementById('ovPeek');
+const ovPairs    = document.getElementById('ovPairs');
+const btnStart   = document.getElementById('btnStart');
+const cardGrid   = document.getElementById('cardGrid');
+const statLevel  = document.getElementById('statLevel');
+const statPairs  = document.getElementById('statPairs');
+const statErrors = document.getElementById('statErrors');
+const statScore  = document.getElementById('statScore');
+const peekBarWrap= document.getElementById('peekBarWrap');
+const peekBar    = document.getElementById('peekBar');
+const peekCount  = document.getElementById('peekCount');
+const message    = document.getElementById('message');
+
+// ==================== OVERLAY SETUP ====================
+function showLevelOverlay() {
+  const cfg = LEVELS[Math.min(level, LEVELS.length - 1)];
+  const cols = cfg.cols, rows = cfg.rows;
+  const total = cols * rows;
+  const pairs = Math.floor(total / 2);
+  const peekSec = (cfg.peekTime / 1000).toFixed(1).replace('.0','');
+
+  overlay.className = 'overlay';
+  ovBadge.textContent = '// УРОВЕНЬ';
+  ovTitle.textContent = `УРОВЕНЬ ${level + 1}`;
+  ovSub.textContent = 'Запомни расположение карточек и найди все пары';
+  ovGrid.textContent = `${cols}×${rows}`;
+  ovPeek.textContent = `${peekSec}с`;
+  ovPairs.textContent = pairs;
+  btnStart.textContent = 'Начать →';
+  overlay.classList.remove('hidden');
+}
+
+function showWinOverlay() {
+  overlay.className = 'overlay win';
+  ovBadge.textContent = '// ПОБЕДА';
+  const isLast = level >= LEVELS.length - 1;
+  ovTitle.textContent = isLast ? 'МАСТЕР!' : `УРОВЕНЬ ${level + 1} ПРОЙДЕН!`;
+  ovSub.textContent = isLast
+    ? `Ты прошёл все уровни! Счёт: ${score}`
+    : `Отличная память! +${calcLevelBonus()} очков бонуса`;
+  ovGrid.textContent = `${score}`;
+  document.querySelector('.info-item:nth-child(1) .info-lbl').textContent = 'Счёт';
+  ovPeek.textContent = errors;
+  document.querySelector('.info-item:nth-child(2) .info-lbl').textContent = 'Ошибок';
+  ovPairs.textContent = level + 1;
+  document.querySelector('.info-item:nth-child(3) .info-lbl').textContent = 'Уровней';
+  btnStart.textContent = isLast ? 'Играть снова →' : `Уровень ${level + 2} →`;
+  overlay.classList.remove('hidden');
+  spawnConfetti();
+}
+
+// ==================== LEVEL INIT ====================
+function initLevel() {
+  const cfg = LEVELS[Math.min(level, LEVELS.length - 1)];
+  const cols = cfg.cols, rows = cfg.rows;
+  const total = cols * rows;
+  const pairs = Math.floor(total / 2);
+  totalPairs = pairs;
+  matched = 0;
+  flipped = [];
+  canFlip = false;
+  peekDuration = cfg.peekTime;
+
+  // Pick emoji pairs
+  const pool = [...EMOJIS].sort(() => Math.random() - 0.5).slice(0, pairs);
+  const deck = [...pool, ...pool].sort(() => Math.random() - 0.5);
+
+  statLevel.textContent = level + 1;
+  statPairs.textContent = `0 / ${pairs}`;
+  statErrors.textContent = errors;
+  statScore.textContent = score;
+  showMsg('');
+
+  // Set grid CSS
+  const cardSize = getCardSize(cols, rows);
+  cardGrid.style.gridTemplateColumns = `repeat(${cols}, ${cardSize}px)`;
+  cardGrid.style.gridTemplateRows = `repeat(${rows}, ${cardSize}px)`;
+
+  cardGrid.innerHTML = '';
+  cards = deck.map((emoji, i) => {
+    const fc = document.createElement('div');
+    fc.className = 'flip-card peeking';
+    fc.style.width = cardSize + 'px';
+    fc.style.height = cardSize + 'px';
+    fc.dataset.emoji = emoji;
+    fc.dataset.index = i;
+    fc.innerHTML = `
+      <div class="flip-card-inner">
+        <div class="card-back"></div>
+        <div class="card-face">${emoji}</div>
+      </div>`;
+    fc.addEventListener('click', () => onCardClick(fc));
+    cardGrid.appendChild(fc);
+    return fc;
+  });
+
+  // Peek phase
+  peekBarWrap.style.display = 'block';
+  peekBar.style.width = '100%';
+  peekStart = Date.now();
+  updatePeekBar();
+}
+
+function getCardSize(cols, rows) {
+  const maxW = Math.min(window.innerWidth - 40, 860);
+  const maxH = window.innerHeight - 300;
+  const byW = Math.floor((maxW - (cols - 1) * 10) / cols);
+  const byH = Math.floor((maxH - (rows - 1) * 10) / rows);
+  return Math.max(40, Math.min(byW, byH, 100));
+}
+
+function updatePeekBar() {
+  const elapsed = Date.now() - peekStart;
+  const remaining = Math.max(0, peekDuration - elapsed);
+  const pct = (remaining / peekDuration) * 100;
+  peekBar.style.width = pct + '%';
+  peekCount.textContent = Math.ceil(remaining / 1000);
+
+  if (remaining <= 0) {
+    endPeek();
+  } else {
+    peekInterval = requestAnimationFrame(updatePeekBar);
+  }
+}
+
+function endPeek() {
+  cancelAnimationFrame(peekInterval);
+  peekBarWrap.style.display = 'none';
+  cards.forEach(c => c.classList.remove('peeking'));
+  canFlip = true;
+  showMsg('Найди все пары!', 'cyan');
+}
+
+// ==================== CARD LOGIC ====================
+function onCardClick(card) {
+  if (!canFlip) return;
+  if (card.classList.contains('matched') || card.classList.contains('flipped')) return;
+  if (flipped.length >= 2) return;
+
+  card.classList.add('flipped');
+  flipped.push(card);
+
+  if (flipped.length === 2) {
+    canFlip = false;
+    setTimeout(checkPair, 700);
+  }
+}
+
+function checkPair() {
+  const [a, b] = flipped;
+  if (a.dataset.emoji === b.dataset.emoji) {
+    a.classList.add('matched'); a.classList.remove('flipped');
+    b.classList.add('matched'); b.classList.remove('flipped');
+    matched++;
+    const bonus = Math.max(10, 50 - errors * 2);
+    score += bonus;
+    statPairs.textContent = `${matched} / ${totalPairs}`;
+    statScore.textContent = score;
+    showMsg(`Совпадение! +${bonus}`, 'success');
+    flipped = [];
+    canFlip = true;
+    if (matched === totalPairs) {
+      setTimeout(onLevelComplete, 600);
+    }
+  } else {
+    a.classList.add('wrong'); b.classList.add('wrong');
+    errors++;
+    statErrors.textContent = errors;
+    showMsg('Не совпадает!', 'error');
+    setTimeout(() => {
+      a.classList.remove('flipped', 'wrong');
+      b.classList.remove('flipped', 'wrong');
+      flipped = [];
+      canFlip = true;
+      showMsg('');
+    }, 700);
+  }
+}
+
+function onLevelComplete() {
+  score += calcLevelBonus();
+  statScore.textContent = score;
+  // reset info labels
+  document.querySelector('.info-item:nth-child(1) .info-lbl').textContent = 'Сетка';
+  document.querySelector('.info-item:nth-child(2) .info-lbl').textContent = 'Запоминание';
+  document.querySelector('.info-item:nth-child(3) .info-lbl').textContent = 'Пар';
+  showWinOverlay();
+}
+
+function calcLevelBonus() {
+  return Math.max(0, 200 - errors * 20) * (level + 1);
+}
+
+// ==================== MSG ====================
+function showMsg(text, type = '') {
+  message.textContent = text;
+  message.className = 'message' + (type ? ' ' + type : '') + (text ? ' show' : '');
+}
+
+// ==================== CONFETTI ====================
+function spawnConfetti() {
+  const colors = ['#00f5ff','#b44fff','#ff2d78','#39ff6a','#ff8c00'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const dot = document.createElement('div');
+      dot.className = 'confetti-dot';
+      dot.style.left = Math.random() * 100 + 'vw';
+      dot.style.top = '-10px';
+      dot.style.background = colors[Math.floor(Math.random() * colors.length)];
+      dot.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      document.body.appendChild(dot);
+      dot.addEventListener('animationend', () => dot.remove());
+    }, i * 40);
+  }
+}
+
+// ==================== BUTTON ====================
+btnStart.addEventListener('click', () => {
+  const isWin = overlay.classList.contains('win');
+  overlay.classList.add('hidden');
+
+  if (isWin) {
+    if (level >= LEVELS.length - 1) {
+      // Restart
+      level = 0; score = 0; errors = 0;
+      showLevelOverlay();
+      return;
+    }
+    level++;
+  }
+
+  // Reset info labels in case they were changed
+  document.querySelector('.info-item:nth-child(1) .info-lbl').textContent = 'Сетка';
+  document.querySelector('.info-item:nth-child(2) .info-lbl').textContent = 'Запоминание';
+  document.querySelector('.info-item:nth-child(3) .info-lbl').textContent = 'Пар';
+
+  initLevel();
+});
+
+// ==================== INIT ====================
+showLevelOverlay();
+</script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><link rel="stylesheet" href="styles.css"></head>
+<body>
+<div class="wrapper">
+<h1 class="title">💀 Увернись</h1>
+<canvas id="c" width="400" height="400"></canvas>
+<a href="index.html" class="btn">← Меню</a>
+</div>
+
+<script>
+let ctx=c.getContext("2d")
+let px=200,enemy=0
+
+document.onmousemove=e=>px=e.offsetX
+
+function draw(){
+ ctx.clearRect(0,0,400,400)
+ ctx.fillRect(px,380,40,10)
+ ctx.fillRect(200,enemy,20,20)
+ enemy+=5
+ if(enemy>400)enemy=0
+ requestAnimationFrame(draw)
+}
+draw()
+</script>
+</body>
+</html>

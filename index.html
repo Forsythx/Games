@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS GAMES — Портал</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --neon-cyan: #00f5ff;
+    --neon-purple: #b44fff;
+    --neon-pink: #ff2d78;
+    --neon-green: #39ff6a;
+    --neon-orange: #ff8c00;
+    --dark-bg: #050811;
+    --card-bg: rgba(255,255,255,0.04);
+    --card-border: rgba(255,255,255,0.1);
+    --glow-cyan: 0 0 20px rgba(0,245,255,0.4), 0 0 60px rgba(0,245,255,0.15);
+    --glow-purple: 0 0 20px rgba(180,79,255,0.4), 0 0 60px rgba(180,79,255,0.15);
+    --glow-pink: 0 0 20px rgba(255,45,120,0.4), 0 0 60px rgba(255,45,120,0.15);
+    --glow-green: 0 0 20px rgba(57,255,106,0.4), 0 0 60px rgba(57,255,106,0.15);
+  }
+
+  body {
+    font-family: 'Rajdhani', sans-serif;
+    background: var(--dark-bg);
+    color: #fff;
+    min-height: 100vh;
+    overflow-x: hidden;
+    cursor: none;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    width: 12px; height: 12px;
+    background: var(--neon-cyan);
+    border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 9999;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s, background 0.2s;
+    box-shadow: 0 0 10px var(--neon-cyan), 0 0 30px rgba(0,245,255,0.4);
+  }
+  .cursor-ring {
+    width: 36px; height: 36px;
+    border: 1px solid rgba(0,245,255,0.5);
+    border-radius: 50%;
+    position: fixed; pointer-events: none; z-index: 9998;
+    transform: translate(-50%, -50%);
+    transition: transform 0.15s ease, width 0.2s, height 0.2s, border-color 0.2s;
+  }
+
+  /* Starfield */
+  .starfield {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(0,245,255,0.03) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(180,79,255,0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 60% 80%, rgba(255,45,120,0.03) 0%, transparent 50%);
+  }
+  .starfield::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 60%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 30%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 80%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 10%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 50%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 90%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 92% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 35% 45%, rgba(0,245,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 35%, rgba(180,79,255,0.5) 0%, transparent 100%),
+      radial-gradient(2px 2px at 48% 68%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 78% 88%, rgba(57,255,106,0.5) 0%, transparent 100%);
+  }
+
+  /* Grid lines */
+  .grid-lines {
+    position: fixed; inset: 0; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,245,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,245,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* Header */
+  header {
+    position: relative; z-index: 10;
+    text-align: center;
+    padding: 60px 20px 40px;
+  }
+  .logo-badge {
+    display: inline-block;
+    font-family: 'Orbitron', monospace;
+    font-size: 11px; font-weight: 700;
+    letter-spacing: 6px;
+    color: var(--neon-cyan);
+    border: 1px solid rgba(0,245,255,0.3);
+    padding: 6px 20px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    animation: pulse-badge 3s ease-in-out infinite;
+  }
+  @keyframes pulse-badge {
+    0%, 100% { border-color: rgba(0,245,255,0.3); box-shadow: none; }
+    50% { border-color: rgba(0,245,255,0.7); box-shadow: 0 0 15px rgba(0,245,255,0.2); }
+  }
+  .portal-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(42px, 8vw, 90px);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -2px;
+    background: linear-gradient(135deg, #fff 0%, var(--neon-cyan) 40%, var(--neon-purple) 80%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(0,245,255,0.3));
+    animation: title-glow 4s ease-in-out infinite;
+  }
+  @keyframes title-glow {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(0,245,255,0.3)); }
+    50% { filter: drop-shadow(0 0 50px rgba(0,245,255,0.6)); }
+  }
+  .portal-sub {
+    font-size: 16px; font-weight: 300;
+    letter-spacing: 4px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    margin-top: 14px;
+  }
+  .scan-line {
+    width: 200px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+    margin: 20px auto 0;
+    animation: scan 2s ease-in-out infinite;
+  }
+  @keyframes scan { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+
+  /* Game grid */
+  .games-container {
+    position: relative; z-index: 10;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 30px 80px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+  }
+
+  /* Cards */
+  .game-card {
+    position: relative;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    padding: 32px 28px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    text-decoration: none;
+    color: inherit;
+    overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1),
+                border-color 0.3s, box-shadow 0.3s;
+    cursor: none;
+    animation: card-in 0.6s ease both;
+  }
+  .game-card:nth-child(1) { animation-delay: 0.05s; --accent: var(--neon-cyan); --glow: var(--glow-cyan); }
+  .game-card:nth-child(2) { animation-delay: 0.1s;  --accent: var(--neon-purple); --glow: var(--glow-purple); }
+  .game-card:nth-child(3) { animation-delay: 0.15s; --accent: var(--neon-pink); --glow: var(--glow-pink); }
+  .game-card:nth-child(4) { animation-delay: 0.2s;  --accent: var(--neon-orange); --glow: 0 0 20px rgba(255,140,0,0.4), 0 0 60px rgba(255,140,0,0.15); }
+  .game-card:nth-child(5) { animation-delay: 0.25s; --accent: var(--neon-green); --glow: var(--glow-green); }
+  .game-card:nth-child(6) { animation-delay: 0.3s;  --accent: var(--neon-pink); --glow: var(--glow-pink); }
+  .game-card:nth-child(7) { animation-delay: 0.35s; --accent: var(--neon-cyan); --glow: var(--glow-cyan); }
+  .game-card:nth-child(8) { animation-delay: 0.4s;  --accent: var(--neon-purple); --glow: var(--glow-purple); }
+
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(30px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .game-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at 50% 0%, var(--accent), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  .game-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.05), transparent);
+    transition: left 0.5s;
+  }
+  .game-card:hover::before { opacity: 0.08; }
+  .game-card:hover::after { left: 150%; }
+  .game-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: var(--accent);
+    box-shadow: var(--glow), inset 0 0 30px rgba(0,0,0,0.3);
+  }
+
+  /* Card corner accent */
+  .card-corner {
+    position: absolute;
+    top: 0; right: 0;
+    width: 40px; height: 40px;
+    overflow: hidden;
+  }
+  .card-corner::before {
+    content: '';
+    position: absolute;
+    top: -1px; right: -1px;
+    width: 0; height: 0;
+    border-style: solid;
+    border-width: 0 40px 40px 0;
+    border-color: transparent var(--accent) transparent transparent;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+  }
+  .game-card:hover .card-corner::before { opacity: 1; }
+
+  .card-number {
+    font-family: 'Orbitron', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 3px;
+    margin-bottom: 16px;
+    opacity: 0.7;
+  }
+
+  .card-icon {
+    font-size: 42px;
+    margin-bottom: 16px;
+    display: block;
+    filter: drop-shadow(0 0 8px var(--accent));
+    transition: transform 0.3s, filter 0.3s;
+  }
+  .game-card:hover .card-icon {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 16px var(--accent));
+  }
+
+  .card-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 17px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 10px;
+    line-height: 1.3;
+    transition: color 0.3s;
+  }
+  .game-card:hover .card-title { color: var(--accent); }
+
+  .card-desc {
+    font-size: 13px;
+    font-weight: 300;
+    color: rgba(255,255,255,0.45);
+    line-height: 1.6;
+  }
+
+  .card-play {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateX(-10px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  .card-play::after {
+    content: '→';
+    transition: transform 0.3s;
+  }
+  .game-card:hover .card-play { opacity: 1; transform: translateX(0); }
+  .game-card:hover .card-play::after { transform: translateX(4px); }
+
+  /* Scanline overlay */
+  .scanlines {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.04) 2px,
+      rgba(0,0,0,0.04) 4px
+    );
+  }
+
+  /* Footer */
+  footer {
+    position: relative; z-index: 10;
+    text-align: center;
+    padding: 20px;
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.15);
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 600px) {
+    .games-container { grid-template-columns: 1fr; padding: 20px 16px 60px; }
+  }
+</style>
+</head>
+<body>
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="starfield"></div>
+<div class="grid-lines"></div>
+<div class="scanlines"></div>
+
+<header>
+  <div class="logo-badge">⬡ Nexus Games Portal</div>
+  <h1 class="portal-title">АРКАДА</h1>
+  <p class="portal-sub">8 игр · Бесконечный вызов · Один портал</p>
+  <div class="scan-line"></div>
+</header>
+
+<div class="games-container">
+
+  <a href="game1.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 001</div>
+    <span class="card-icon">🃏</span>
+    <div class="card-title">Угадай Пару</div>
+    <div class="card-desc">Переворачивай карточки и находи совпадения. Чем выше уровень — тем меньше времени на запоминание.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+  <a href="game2.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 002</div>
+    <span class="card-icon">🐍</span>
+    <div class="card-title">Хардкорная Змейка</div>
+    <div class="card-desc">Классическая змейка на максималках. Скорость растёт, стены появляются, пощады нет.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+  <a href="game3.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 003</div>
+    <span class="card-icon">👆</span>
+    <div class="card-title">Супер Кликер</div>
+    <div class="card-desc">Кликай быстрее, собирай очки, прокачивай силу. Испытай предел своей скорости реакции.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+  <a href="game4.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 004</div>
+    <span class="card-icon">🧮</span>
+    <div class="card-title">Математический Шторм</div>
+    <div class="card-desc">Уравнения летят со всех сторон. Решай примеры быстрее, пока время не закончилось.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+  <a href="game5.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 005</div>
+    <span class="card-icon">🌀</span>
+    <div class="card-title">Лабиринт</div>
+    <div class="card-desc">Найди выход из процедурно генерируемых лабиринтов. Сложность растёт с каждым уровнем.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+  <a href="game6.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 006</div>
+    <span class="card-icon">💥</span>
+    <div class="card-title">Увернись от Пуль</div>
+    <div class="card-desc">Пули со всех сторон, ты в центре. Уворачивайся как можно дольше. Bullet hell на выживание.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+  <a href="game7.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 007</div>
+    <span class="card-icon">🎨</span>
+    <div class="card-title">Цветовая Слепота</div>
+    <div class="card-desc">Найди цвет, который отличается от остальных. Разница становится всё меньше с каждым раундом.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+  <a href="game8.html" class="game-card">
+    <div class="card-corner"></div>
+    <div class="card-number">// 008</div>
+    <span class="card-icon">🔮</span>
+    <div class="card-title">Саймон Говорит</div>
+    <div class="card-desc">Запомни и повтори нарастающую последовательность вспышек. Классика на тест памяти.</div>
+    <div class="card-play">Играть</div>
+  </a>
+
+</div>
+
+<footer>© NEXUS GAMES — Все игры в одном портале</footer>
+
+<script>
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  function animateCursor() {
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateCursor);
+  }
+  animateCursor();
+
+  document.querySelectorAll('.game-card').forEach(card => {
+    card.addEventListener('mouseenter', () => {
+      cursor.style.transform = 'translate(-50%,-50%) scale(1.5)';
+      ring.style.width = '60px'; ring.style.height = '60px';
+      const accent = getComputedStyle(card).getPropertyValue('--accent').trim();
+      ring.style.borderColor = accent;
+    });
+    card.addEventListener('mouseleave', () => {
+      cursor.style.transform = 'translate(-50%,-50%) scale(1)';
+      ring.style.width = '36px'; ring.style.height = '36px';
+      ring.style.borderColor = 'rgba(0,245,255,0.5)';
+    });
+  });
+</script>
+</body>
+</html>

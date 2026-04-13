@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head><link rel="stylesheet" href="styles.css"></head>
+<body>
+<div class="wrapper">
+<h1 class="title">🧠 Математика</h1>
+<div class="card">
+<p id="q"></p>
+<input id="a">
+<button class="btn" onclick="check()">OK</button>
+</div>
+<a href="index.html" class="btn">← Меню</a>
+</div>
+
+<script>
+let x=Math.floor(Math.random()*10)
+let y=Math.floor(Math.random()*10)
+q.innerText=`${x}+${y}`
+
+function check(){
+ alert(a.value==x+y?"OK":"FAIL")
+}
+</script>
+</body>
+</html>
